@@ -17,13 +17,14 @@ use rand::prelude::*;
 use rand::SeedableRng;
 use std::collections::BTreeSet;
 use std::io;
-use std::io::{Read, Write};
+use std::io::{Cursor, Read, Write};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Mutex};
 use thinp::io_engine::BLOCK_SIZE;
 use thinp::pdata::btree;
 use thinp::pdata::btree::*;
+use thinp::pdata::btree_builder::*;
 use thinp::pdata::btree_walker::*;
 use thinp::pdata::unpack::*;
 
@@ -92,11 +93,6 @@ impl<V: Unpack> NodeVisitor<V> for ResidencyVisitor {
     fn end_walk(&self) -> btree::Result<()> {
         Ok(())
     }
-}
-
-fn calc_max_entries<V: Unpack>() -> usize {
-    let elt_size = 8 + V::disk_size() as usize; // key + value size
-    ((BLOCK_SIZE - NodeHeader::disk_size() as usize) / elt_size) as usize
 }
 
 // Because this is a walk it implicitly checks the btree.  Returns
@@ -512,9 +508,6 @@ fn test_insert_runs(fix: &mut Fixture) -> Result<()> {
 
 //-------------------------------
 
-//-------------------------------
-
-/*
 fn mk_node(fix: &mut Fixture, nr_entries: usize) -> Result<(AutoGPtr, Addr)> {
     let header = NodeHeader {
         block: 1,
@@ -542,6 +535,17 @@ fn mk_node(fix: &mut Fixture, nr_entries: usize) -> Result<(AutoGPtr, Addr)> {
     Ok((fix, block))
 }
 
+fn get_node<V: Unpack>(fix: &mut Fixture, block: Addr, ignore_non_fatal: bool) -> Result<Node<V>> {
+    let node = fix.vm.mem.read_some(block, PERM_READ, |bytes| {
+        unpack_node(&[0], bytes, ignore_non_fatal, false).unwrap()
+    })?;
+
+    Ok(node)
+}
+
+//-------------------------------
+
+/*
 #[derive(Debug, PartialEq, Eq)]
 struct Move {
     dest: Addr,
@@ -629,8 +633,9 @@ fn do_redistribute_2(fix: &mut Fixture, lhs_count: u32, rhs_count: u32) -> Resul
     info!("src: {:?}", src);
     do_redistribute_test(&mut *fix, dest, src)
 }
+*/
 
-fn test_redistribute_entries(fix: &mut Fixture) -> Result<()> {
+/*fn test_redistribute_entries(fix: &mut Fixture) -> Result<()> {
     standard_globals(fix)?;
 
     do_redistribute_2(fix, 0, 100)?;
@@ -641,10 +646,43 @@ fn test_redistribute_entries(fix: &mut Fixture) -> Result<()> {
     info!("100, 0");
     do_redistribute_2(fix, 100, 0)?;
     Ok(())
+}*/
+
+//-------------------------------
+
+fn test_redistribute_2(fix: &mut Fixture, lhs_count: u32, rhs_count: u32) -> Result<()> {
+    let total_count = lhs_count + rhs_count;
+    let lhs_target = total_count / 2;
+    let rhs_target = total_count - lhs_target;
+
+    let (mut fix, node1_ptr) = mk_node(fix, lhs_count as usize)?;
+    let (mut fix, node2_ptr) = mk_node(&mut *fix, rhs_count as usize)?;
+    redistribute2(&mut *fix, node1_ptr, node2_ptr)?;
+
+    // TODO: check ordering
+    let node1 = get_node::<Value64>(&mut *fix, node1_ptr, true)?;
+    let node2 = get_node::<Value64>(&mut *fix, node2_ptr, true)?;
+    ensure!(lhs_target == node1.get_header().nr_entries);
+    ensure!(rhs_target == node2.get_header().nr_entries);
+
+    Ok(())
+}
+
+fn test_redistribute_entries(fix: &mut Fixture) -> Result<()> {
+    standard_globals(fix)?;
+
+    test_redistribute_2(fix, 0, 100)?;
+    test_redistribute_2(fix, 25, 75)?;
+    test_redistribute_2(fix, 50, 50)?;
+    test_redistribute_2(fix, 75, 25)?;
+    test_redistribute_2(fix, 100, 0)?;
+
+    Ok(())
 }
 
 //-------------------------------
 
+/*
 fn test_split_one_into_two_bad_redistribute(fix: &mut Fixture) -> Result<()> {
     standard_globals(fix)?;
 
@@ -684,6 +722,11 @@ pub fn register_tests(runner: &mut TestRunner) -> Result<()> {
             test!("descending", test_insert_descending)
             test!("random", test_insert_random)
             test!("runs", test_insert_runs)
+        }
+
+        test_section! {
+            "redistribute/",
+            test!("redistribute-2", test_redistribute_entries)
         }
     };
 
