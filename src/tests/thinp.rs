@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 use thinp::io_engine::*;
 use thinp::pdata::btree_walker::*;
-use thinp::pdata::space_map::*;
+use thinp::pdata::space_map_common::*;
 use thinp::pdata::unpack::*;
 use thinp::report::*;
 use thinp::thin::check::*;
@@ -54,6 +54,8 @@ impl ReportInner for DebugReportInner {
     }
 
     fn complete(&mut self) {}
+
+    fn to_stdout(&mut self, _txt: &str) {}
 }
 
 impl ThinPool {
