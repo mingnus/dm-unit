@@ -45,6 +45,29 @@ pub fn extent_allocator_dump(fix: &mut Fixture, ea_addr: Addr) -> Result<()> {
     Ok(())
 }
 
+pub fn extent_allocator_get_nr_prealloc(fix: &mut Fixture, ea_addr: Addr) -> Result<u32> {
+    fix.vm.set_reg(A0, ea_addr.0);
+
+    let (mut fix, result_ptr) = auto_alloc(fix, 4)?;
+    fix.vm.set_reg(A1, result_ptr.0);
+
+    fix.call("dm_extent_allocator_get_nr_prealloc")?;
+    let r = fix.vm.mem.read_into::<u32>(result_ptr, PERM_READ)?;
+
+    Ok(r)
+}
+
+pub fn extent_allocator_get_nr_free(fix: &mut Fixture, ea_addr: Addr) -> Result<u32> {
+    fix.vm.set_reg(A0, ea_addr.0);
+
+    let (mut fix, result_ptr) = auto_alloc(fix, 4)?;
+    fix.vm.set_reg(A1, result_ptr.0);
+
+    fix.call("dm_extent_allocator_get_nr_free")?;
+    let r = fix.vm.mem.read_into::<u32>(result_ptr, PERM_READ)?;
+
+    Ok(r)
+}
 pub fn alloc_context_get(fix: &mut Fixture, ea_addr: Addr) -> Result<Addr> {
     fix.vm.set_reg(A0, ea_addr.0);
     let (mut fix, result_ptr) = auto_alloc(fix, 48)?;

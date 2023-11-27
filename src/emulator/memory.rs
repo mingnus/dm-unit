@@ -565,6 +565,14 @@ impl Memory {
 
         Ok(std::str::from_utf8(&buffer).unwrap().to_owned())
     }
+
+    pub fn get_allocated_bytes(&self) -> Result<u64> {
+        Ok(self
+            .allocations
+            .iter()
+            .map(|(_, (_, len))| *len as u64)
+            .sum())
+    }
 }
 
 //-------------------------------------

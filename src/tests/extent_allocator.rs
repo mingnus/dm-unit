@@ -394,6 +394,42 @@ fn test_shared_contexts(fix: &mut Fixture) -> Result<()> {
     Ok(())
 }
 
+fn test_destroy_tree(fix: &mut Fixture) -> Result<()> {
+    standard_globals(fix)?;
+
+    let nr_blocks = 1024;
+    let nr_contexts = 16;
+
+    let mem1 = fix.vm.mem.get_allocated_bytes()?;
+
+    let ea = extent_allocator_create(fix, nr_blocks as u64)?;
+    let allocated = Arc::new(Mutex::new(RoaringBitmap::new()));
+
+    let mut contexts = Vec::new();
+    for _ in 0..nr_contexts {
+        let context = alloc_context_get(fix, ea)?;
+        contexts.push(AllocationContext::new(context));
+    }
+
+    for context in &mut contexts {
+        context.alloc(fix, &allocated)?;
+    }
+
+    // reset the tree while there are holders
+    extent_allocator_reset(fix, ea)?;
+
+    for context in contexts {
+        alloc_context_put(fix, context.context)?;
+    }
+
+    extent_allocator_destroy(fix, ea)?;
+
+    let mem2 = fix.vm.mem.get_allocated_bytes()?;
+    ensure!(mem1 == mem2);
+
+    Ok(())
+}
+
 //-------------------------------
 
 pub fn register_tests(tests: &mut TestSet) -> Result<()> {
@@ -430,6 +466,7 @@ pub fn register_tests(tests: &mut TestSet) -> Result<()> {
         test!("reset/no-holders", test_reset_no_holders)
         test!("reset/many-holders", test_reset_many_holders)
         test!("shared-contexts", test_shared_contexts)
+        test!("destroy_tree", test_destroy_tree)
     };
 
     Ok(())
