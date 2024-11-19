@@ -652,7 +652,7 @@ impl VM {
                 let rs1 = self.reg(rs1);
                 let rs2 = self.reg(rs2);
                 let v = if rs2 == 0 {
-                    core::u64::MAX
+                    u64::MAX
                 } else {
                     rs1.wrapping_div(rs2)
                 };
@@ -691,7 +691,7 @@ impl VM {
                 let rs1 = self.reg(rs1) as u32;
                 let rs2 = self.reg(rs2) as u32;
                 let v = if rs2 == 0 {
-                    core::u32::MAX
+                    u32::MAX
                 } else {
                     rs1.wrapping_div(rs2)
                 };
