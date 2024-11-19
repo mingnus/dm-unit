@@ -475,7 +475,7 @@ impl<'a> AutoGPtr<'a> {
     }
 }
 
-impl<'a> Drop for AutoGPtr<'a> {
+impl Drop for AutoGPtr<'_> {
     fn drop(&mut self) {
         if self.ptr.is_null() {
             return;
@@ -489,14 +489,14 @@ impl<'a> Drop for AutoGPtr<'a> {
     }
 }
 
-impl<'a> Deref for AutoGPtr<'a> {
+impl Deref for AutoGPtr<'_> {
     type Target = Fixture;
     fn deref(&self) -> &Self::Target {
         self.fix
     }
 }
 
-impl<'a> DerefMut for AutoGPtr<'a> {
+impl DerefMut for AutoGPtr<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.fix
     }

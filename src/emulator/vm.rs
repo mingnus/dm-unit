@@ -946,7 +946,7 @@ impl VM {
     pub fn get_hot_basic_blocks(&self) -> Vec<BBStats> {
         let mut stats = Vec::with_capacity(self.inst_cache.basic_blocks.len());
 
-        for (_, bb) in &self.inst_cache.basic_blocks {
+        for bb in self.inst_cache.basic_blocks.values() {
             let bb = bb.borrow();
             stats.push(BBStats {
                 begin: Addr(bb.begin),

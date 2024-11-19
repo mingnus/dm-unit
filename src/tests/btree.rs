@@ -510,7 +510,7 @@ impl<'a> BTreeTest<'a> {
     }
 }
 
-impl<'a> Drop for BTreeTest<'a> {
+impl Drop for BTreeTest<'_> {
     fn drop(&mut self) {
         if let Some(sb) = self.sb {
             dm_bm_unlock(self.fix, sb).expect("unlock superblock");
