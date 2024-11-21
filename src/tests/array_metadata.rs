@@ -2,6 +2,7 @@ use crate::block_manager::*;
 use crate::fixture::*;
 use crate::tests::persistent_metadata::PersistentMetadata;
 use crate::wrappers::array::*;
+use crate::wrappers::array_cursor::*;
 use crate::wrappers::btree::BTreeValueType;
 
 use anyhow::Result;
@@ -42,6 +43,10 @@ impl<'a> ArrayMetadata<'a> {
         self.md.get_bm()
     }
 
+    pub fn fixture_mut(&mut self) -> &mut Fixture {
+        self.md.fix
+    }
+
     // This function takes ownership as the array is no longer valid
     pub fn delete(mut self) -> Result<()> {
         dm_array_del(self.md.fix, &self.info, self.root)?;
@@ -68,6 +73,10 @@ impl<'a> ArrayMetadata<'a> {
         )?;
         self.array_size = new_size;
         Ok(())
+    }
+
+    pub fn get_cursor(&mut self) -> Result<ArrayCursor<u64>> {
+        init_array_cursor(self.md.fix, &self.info, self.root)
     }
 }
 
